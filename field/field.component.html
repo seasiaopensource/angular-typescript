@@ -1,0 +1,281 @@
+ 
+
+  <div class="header-holder">
+    <!-- <h3>Configure Field</h3> -->
+    <div class="sidebar clearfix"> 
+        <div class="col-12">
+            <div class="col-7 search-box">
+                <div class="input-group">
+                    <input type="text" class="form-control" [(ngModel)]="fieldModel.searchFilter"  placeholder="Search Field" aria-label="Search Tab" aria-describedby="basic-addon2">
+                    <div class="input-group-append"> 
+                        <button class="fa fa-search btn btn-outline-secondary" (click)="searchWithFilter()"></button>               
+                    </div>
+                    <div class="add-btn-section">
+                    <i class="fa fa-plus-circle" (click)="openFieldDialoge(addEditPopup)"></i>
+                    </div>
+                  </div>
+            </div>
+            <form class="search-table-min-height text-center">
+               
+              <div class=" col-md-12">
+                <div class="table-responsive" style="padding: 20px;">
+                  <table class="table table-hover table-bordered">
+                    <thead class="bg-primary">
+                      <tr>
+                        <th >#</th>
+                        <th class="cursorCss" sortColumn [sortKey]="'name'" [data]="fieldModel.currentRecords">Name</th>
+                        <th class="cursorCss" sortColumn [sortKey]="'fieldType'" [data]="fieldModel.currentRecords">Type</th>
+                        <th>Action</th>                   
+                      </tr>
+                    </thead>
+                    <tbody>
+                     <tr *ngFor="let field of fieldModel.currentRecords;let in=index">
+                         <td>{{in+1}}</td>
+                         <td>{{field.name}}</td>
+                         <td>{{field.fieldType}} </td>
+                         <td> <i class="fa fa-pencil-square-o edit-icon text-blue" title="Edit" (click)="showEditDialoge(field.id,addEditPopup)"></i> <i class="fa fa-ban edit-icon text-warning" title="Disable" (click)="disableField(field.id)"></i></td>
+                     </tr>
+                     <tr>
+                        <td colspan="4" *ngIf="fieldModel.currentRecords.length==0">
+                          No Record Found.
+                        </td>
+                    </tbody>
+                  </table> 
+                  <div class="container-fluid" [hidden]="fieldModel.filteredResults.length==0">
+                    <dfb-pagination [results]="fieldModel.filteredResults" (resultChanged)="getPagingData($event)"></dfb-pagination>
+                   </div>      
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        </div>
+
+
+
+<!-- Edit Fields Pop Up-->
+<ng-template #addEditPopup>
+    <div class="modal-header">
+        <h4 class="modal-title">{{fieldModel.isEditMode?'Edit':'Add'}} Field</h4>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="cancel()">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body edit-scroll-popup">
+        <div>
+            <form name="sendEmailForm" #editFieldsForm="ngForm" novalidate>
+
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="fieldName" class="label">Field Name:<i class="mandate">*</i></label>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <input id="fieldName" type="text" name="fieldName" [(ngModel)]="fieldDetail.name"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="fieldType" class="label">Field Type:<i class="mandate">*</i></label>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <select required name="fieldType" [(ngModel)]="fieldDetail.type" class="form-control"
+                                (change)="checkFieldOptions()">
+                                <option value="">--Select--</option>
+                                <option *ngFor="let item of fieldModel.fieldtypeList" [value]="item.id">{{item.value}}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-12" *ngIf="fieldDetail.type=='select'">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="fieldType" class="label">Predefined Masters:</label>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <select  name="subType" [(ngModel)]="fieldDetail.subType" class="form-control"  (change)="checkFieldOptions()">
+                                <option value="">--Select--</option>
+                                <option *ngFor="let item of fieldModel.subDrodownList" [value]="item.id">{{item.value}}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12" *ngIf="fieldDetail.type=='input'">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="fieldValid" class="label">Field Validation:</label>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <select name="fieldValid" [(ngModel)]="fieldDetail.validators.validation[0]" class="form-control">
+                                <option value="">--Select--</option>
+                                <option *ngFor="let item of fieldModel.validators" [value]="item.id">{{item.value}}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12" *ngIf="fieldDetail.type=='input'">
+                    <div class="row" style="margin-right: 0">
+                        <div class="form-group col-md-4">
+                            <label for="length" class="label">Length:<i class="mandate">*</i></label>
+                        </div>
+                        <div class="form-group col-md-1">
+                            <label for="min" class="label">Min:<i class="mandate">*</i></label>
+                        </div>
+                        <div class="form-group col-md-2">
+                            <input id="lengthMin" type="text" name="lengthMin" [(ngModel)]="fieldDetail.templateOptions.minLength"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                        <div class="form-group col-md-1 offset-1">
+                            <label for="max" class="label">Max:<i class="mandate">*</i></label>
+                        </div>
+                        <div class="form-group col-md-2">
+                            <input id="lengthMax" type="text" name="lengthMax" [(ngModel)]="fieldDetail.templateOptions.maxLength"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="defaultValue" class="label">Default Value:</label>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <input id="defaultValue" type="text" name="defaultValue"
+                                [(ngModel)]="fieldDetail.defaultValue" autocomplete="off" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12" *ngIf="fieldDetail.type=='select' && (fieldDetail.subType=='city' || fieldDetail.subType=='area' || fieldDetail.subType=='state' || fieldDetail.subType=='pinCode')">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="indipendentTo" class="label"> Dependent Fields:<i class="mandate">*</i>
+
+                            </label>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <select class="form-control" required id="indipendentTo"  name="indipendentTo" [(ngModel)]="fieldDetail.templateOptions.independentTo" >
+                                <option *ngFor="let option of getIndependentToData" [value]="option.key">{{option.name}}</option>
+                            </select> 
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="col-md-12" *ngIf="fieldDetail.type=='select' && !fieldDetail.subType">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="length" class="label">Options:<i class="mandate">*</i></label>
+                        </div>
+
+                    </div>
+                    <div class="row" *ngFor="let option of fieldDetail.templateOptions.options;let optionIndex=index">
+                        <div class="col-5">
+                            <label for="min" class="label">Label:<i class="mandate">*</i></label>
+                            <input type="text" name="optnLbl-{{optionIndex}}" [(ngModel)]="option.label"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                        <div class="col-5">
+                            <label for="max" class="label">Value:<i class="mandate">*</i></label>
+                            <input type="text" name="valLbl-{{optionIndex}}" [(ngModel)]="option.value"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                        <div class="col-2 add-more-options">
+                            <i class="fa fa-plus text-success" (click)="addMoreOptions()"
+                                *ngIf="optionIndex==fieldDetail.templateOptions.options.length-1"></i>
+                            <i class="fa fa-minus text-danger" (click)="removeOption(optionIndex)"
+                                *ngIf="fieldDetail.templateOptions.options.length>1"></i>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <div class="col-md-12" *ngIf="fieldDetail.type=='radio' ">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="length" class="label">Options:<i class="mandate">*</i></label>
+                        </div>
+
+                    </div>
+                    <div class="row" *ngFor="let option of fieldDetail.templateOptions.options;let optionIndex=index">
+                        <div class="col-5">
+                            <label for="min" class="label">Key:<i class="mandate">*</i></label>
+                            <input type="text" name="optnLbl-{{optionIndex}}" [(ngModel)]="option.key"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                        <div class="col-5">
+                            <label for="max" class="label">Value:<i class="mandate">*</i></label>
+                            <input type="text" name="valLbl-{{optionIndex}}" [(ngModel)]="option.value"
+                                autocomplete="off" class="form-control" required>
+                        </div>
+                        <div class="col-2 add-more-options">
+                            <i class="fa fa-plus text-success" (click)="addMoreOptions()"
+                                *ngIf="optionIndex==fieldDetail.templateOptions.options.length-1"></i>
+                            <i class="fa fa-minus text-danger" (click)="removeOption(optionIndex)"
+                                *ngIf="fieldDetail.templateOptions.options.length>1"></i>
+                        </div>
+                    </div>
+                
+
+
+                </div>
+
+                  <div class="col-md-12">
+                    <div class="row">
+                        <div class="col-6">
+
+                            <div class="example-container container-box">
+                            <h6 class="drag-drop-label">All Sections</h6>
+                               
+                                <div cdkDropList #todoList="cdkDropList" [cdkDropListData]="fieldModel.sections"
+                                    [cdkDropListConnectedTo]="[doneList]" class="example-list"
+                                    (cdkDropListDropped)="drop($event)">
+                                    <div class="example-box"
+                                        *ngFor="let item of fieldModel.sections" cdkDrag>
+                                        {{item.name}}</div>
+                                </div>
+                            </div>
+                           
+                        </div>
+                        <div class="col-6">
+
+                            <div class="example-container container-box"> 
+                            <h6 class="drag-drop-label">Selected Section/s</h6>                             
+
+                                <div cdkDropList #doneList="cdkDropList" [cdkDropListData]="selectedSections"
+                                    [cdkDropListConnectedTo]="[todoList]" class="example-list"
+                                    (cdkDropListDropped)="drop($event)">
+                                    <div class="example-box" *ngFor="let item of selectedSections" cdkDrag>
+                                        {{item.name}}</div>
+                                </div>
+                            </div>
+                           
+                        </div>
+                    </div>
+                </div>
+
+
+            </form>
+        </div>
+
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-success cr" [disabled]="!editFieldsForm.valid"
+            (click)="saveField()">Save</button>
+        <button type="button" class="btn btn-danger cr" (click)="cancel()">Cancel</button>
+    </div>
+</ng-template>
+<!-- Edit Fields Pop Up Ends-->
+<div *ngIf="serverBusy"  class="loaderDiv"><img class="loaderImg"  src="assets/images/Ring-Preloader.gif"></div>
+
+
+
+  
